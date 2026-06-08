@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Futari Room 🌸</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Quicksand:wght@500;600;700&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #ffd1dc, #e6e6fa, #cce7ff);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1, h2, h3, .font-cute { font-family: 'Quicksand', sans-serif; }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Glassmorphism Classes */
+        .glass {
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+        }
+
+        .glass-dark {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+        }
+
+        /* Floating Particles */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.4);
+            animation: float 8s infinite linear;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+
+        /* Smooth Transitions */
+        .fade-enter { opacity: 0; transform: translateY(20px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.5s ease-out; }
+        
+        /* Pulse & Heartbeat */
+        .heartbeat { animation: heartbeat 1.5s ease-in-out infinite both; }
+        @keyframes heartbeat {
+            from { transform: scale(1); transform-origin: center center; animation-timing-function: ease-out; }
+            10% { transform: scale(0.91); animation-timing-function: ease-in; }
+            17% { transform: scale(0.98); animation-timing-function: ease-out; }
+            33% { transform: scale(0.87); animation-timing-function: ease-in; }
+            45% { transform: scale(1); animation-timing-function: ease-out; }
+        }
+
+        /* Hide scrollbar for clean UI */
+        ::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="min-h-screen text-gray-800 flex justify-center selection:bg-pink-300 selection:text-white">
+
+    <div id="particles" class="fixed inset-0 overflow-hidden pointer-events-none z-0"></div>
+
+    <div class="relative w-full max-w-md min-h-screen flex flex-col z-10 px-4 py-6">
+        
+        <section id="screen-login" class="flex-1 flex flex-col items-center justify-center fade-enter-active">
+            <div class="glass w-full rounded-3xl p-8 text-center space-y-6">
+                <div class="text-6xl heartbeat mb-4">🌸</div>
+                <h1 class="text-4xl font-bold font-cute text-pink-500 drop-shadow-sm">Futari Room</h1>
+                <p class="text-gray-600 font-medium pb-4">Ruang rahasia buat kamu & doi.</p>
+                
+                <button id="btn-login" class="w-full bg-white/80 hover:bg-white text-gray-800 font-bold py-4 px-6 rounded-2xl shadow-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3">
+                    <i class="ph-fill ph-google-logo text-2xl text-blue-500"></i>
+                    Masuk dengan Google
+                </button>
+            </div>
+        </section>
+
+        <section id="screen-lobby" class="hidden flex-1 flex flex-col fade-enter-active mt-8">
+            <div class="glass w-full rounded-3xl p-6 mb-6 flex items-center gap-4">
+                <img id="user-avatar" src="" alt="Avatar" class="w-14 h-14 rounded-full border-4 border-white shadow-md">
+                <div>
+                    <p class="text-sm text-gray-500 font-bold">Konnichiwa,</p>
+                    <h2 id="user-name" class="text-xl font-bold font-cute text-purple-600">User</h2>
+                </div>
+                <button id="btn-logout" class="ml-auto glass-dark p-3 rounded-xl text-pink-500 hover:text-pink-600">
+                    <i class="ph-bold ph-sign-out text-xl"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <button id="btn-create-room" class="w-full bg-gradient-to-r from-pink-400 to-purple-400 text-white font-bold py-5 px-6 rounded-3xl shadow-xl transition-all transform hover:scale-[1.02] active:scale-95 flex items-center justify-between">
+                    <span class="text-lg">Buat Room Baru</span>
+                    <i class="ph-bold ph-plus-circle text-2xl"></i>
+                </button>
+
+                <div class="glass w-full rounded-3xl p-6 space-y-4">
+                    <p class="text-center font-bold text-gray-600">Atau gabung room doi</p>
+                    <input type="text" id="input-room-code" placeholder="Masukkan 4 Digit Kode" class="w-full bg-white/50 border-2 border-white/60 focus:border-pink-400 rounded-2xl py-4 px-6 text-center text-2xl font-bold tracking-widest outline-none transition-all placeholder:text-gray-400 placeholder:text-base placeholder:tracking-normal placeholder:font-normal">
+                    <button id="btn-join-room" class="w-full bg-blue-400 text-white font-bold py-4 px-6 rounded-2xl shadow-md transition-all active:scale-95">
+                        Join Room
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section id="screen-game" class="hidden flex-1 flex flex-col fade-enter-active">
+            
+            <div class="glass-dark rounded-3xl p-4 flex justify-between items-center mb-6">
+                <div class="text-center">
+                    <p class="text-xs font-bold text-gray-500 uppercase">Room Code</p>
+                    <p id="display-room-code" class="text-2xl font-bold font-cute text-pink-500 tracking-widest">0000</p>
+                </div>
+                <div class="flex-1 px-4">
+                    <div class="flex justify-between text-xs font-bold text-pink-400 mb-1">
+                        <span>Chemistry</span>
+                        <span id="score-display">0%</span>
+                    </div>
+                    <div class="h-3 w-full bg-white/50 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-gradient-to-r from-pink-400 to-purple-500 w-0 transition-all duration-1000"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center px-2 mb-6">
+                <div class="flex flex-col items-center">
+                    <div class="relative">
+                        <img id="p1-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cbd5e1'/></svg>" class="w-16 h-16 rounded-full border-4 border-white shadow-lg">
+                        <div id="p1-status" class="absolute bottom-0 right-0 w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>
+                    </div>
+                    <p id="p1-name" class="mt-2 text-sm font-bold text-gray-700 w-20 truncate text-center">Menunggu...</p>
+                </div>
+                
+                <div class="text-3xl text-pink-400 heartbeat">💖</div>
+
+                <div class="flex flex-col items-center">
+                    <div class="relative">
+                        <img id="p2-avatar" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='%23cbd5e1'/></svg>" class="w-16 h-16 rounded-full border-4 border-white shadow-lg">
+                        <div id="p2-status" class="absolute bottom-0 right-0 w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>
+                    </div>
+                    <p id="p2-name" class="mt-2 text-sm font-bold text-gray-700 w-20 truncate text-center">Menunggu...</p>
+                </div>
+            </div>
+
+            <div class="glass flex-1 rounded-t-3xl p-6 flex flex-col relative pb-24">
+                
+                <div id="game-state-waiting" class="flex-1 flex flex-col items-center justify-center text-center">
+                    <i class="ph-duotone ph-spinner-gap text-5xl text-pink-400 animate-spin mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-700">Menunggu Doi Masuk...</h3>
+                    <p class="text-sm text-gray-500 mt-2">Kasih kode room ke pasanganmu ya!</p>
+                </div>
+
+                <div id="game-state-playing" class="hidden flex-1 flex flex-col">
+                    <div class="text-center mb-6">
+                        <span class="bg-white/60 text-purple-600 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Pertanyaan</span>
+                        <h2 id="question-text" class="text-2xl font-bold font-cute mt-4 text-gray-800 leading-snug">...</h2>
+                    </div>
+
+                    <div id="reveal-area" class="hidden flex-1 flex-col justify-center items-center gap-6 mb-6">
+                        <div class="w-full glass-dark p-4 rounded-2xl text-center relative overflow-hidden">
+                            <p class="text-xs font-bold text-gray-500 mb-1" id="reveal-p1-name">P1</p>
+                            <p id="reveal-p1-answer" class="text-xl font-bold text-pink-600 blur-md transition-all duration-1000">***</p>
+                        </div>
+                        <div class="w-full glass-dark p-4 rounded-2xl text-center relative overflow-hidden">
+                            <p class="text-xs font-bold text-gray-500 mb-1" id="reveal-p2-name">P2</p>
+                            <p id="reveal-p2-answer" class="text-xl font-bold text-blue-600 blur-md transition-all duration-1000">***</p>
+                        </div>
+                        <div id="match-result" class="hidden text-2xl font-cute font-bold text-center mt-2"></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="action-bar" class="hidden fixed bottom-0 left-0 right-0 max-w-md mx-auto p-4 bg-white/40 backdrop-blur-xl border-t border-white/50 z-50">
+                <div class="flex gap-2">
+                    <input type="text" id="input-answer" placeholder="Ketik jawaban diam-diam..." class="flex-1 bg-white border border-gray-200 focus:border-pink-400 rounded-2xl py-3 px-4 outline-none transition-all shadow-sm">
+                    <button id="btn-submit" class="bg-pink-500 text-white p-3 w-14 rounded-2xl shadow-lg hover:bg-pink-600 transition-all flex items-center justify-center">
+                        <i class="ph-bold ph-paper-plane-right text-xl"></i>
+                    </button>
+                </div>
+                <p id="typing-indicator" class="text-xs text-gray-500 mt-2 ml-2 h-4 italic"></p>
+            </div>
+
+        </section>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, update, child, onDisconnect, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // ==========================================
+        // ⚠️ MASUKKAN CONFIG FIREBASE KAMU DI SINI ⚠️
+        // ==========================================
+        const firebaseConfig = {
+  apiKey: "AIzaSyA-YwPp4NZHtZnMyMCwNVKFibqiFQXI0y4",
+  authDomain: "futari-room.firebaseapp.com",
+  databaseURL: "https://futari-room-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "futari-room",
+  storageBucket: "futari-room.firebasestorage.app",
+  messagingSenderId: "199380042750",
+  appId: "1:199380042750:web:9d31d5679711e14d6476af",
+  measurementId: "G-LJN5B7HSBN"
+};
+
+        // Init Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const provider = new GoogleAuthProvider();
+
+        // ==========================================
+        // SOUND SYSTEM (Web Audio API - No files needed)
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'match') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.1);
+                osc.frequency.setValueAtTime(800, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.5);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.5);
+            } else if (type === 'join') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            }
+        }
+
+        // ==========================================
+        // DATABASE PERTANYAAN (50+ Random Questions)
+        // ==========================================
+       const questionBank = [
+    "Apa makanan favorit pasanganku?",
+    "Minuman favorit pasangan kalau lagi bad mood?",
+    "Snack favorit pasangan tengah malam?",
+    "Es krim favorit pasangan?",
+    "Warna favorit pasangan?",
+    "Film favorit pasangan?",
+    "Anime favorit pasangan?",
+    "Lagu yang paling ngingetin pasangan?",
+    "Game favorit pasangan?",
+    "Cuaca favorit pasangan?",
+    "Aroma parfum favorit pasangan?",
+    "Boba favorit pasangan?",
+    "Mie favorit pasangan?",
+    "Street food favorit pasangan?",
+    "Dessert favorit pasangan?",
+    "Hewan favorit pasangan?",
+    "Karakter anime favorit pasangan?",
+    "Musim favorit pasangan?",
+    "Emoji yang paling sering dipake pasangan?",
+    "Platform sosmed favorit pasangan?",
+    "Siapa yang paling gampang ngambek?",
+    "Siapa yang paling posesif?",
+    "Siapa yang paling manja?",
+    "Siapa yang paling clingy?",
+    "Siapa yang paling sering minta maaf duluan?",
+    "Siapa yang paling keras kepala?",
+    "Siapa yang paling gampang jealous?",
+    "Siapa yang paling random?",
+    "Siapa yang paling receh?",
+    "Siapa yang paling gampang panik?",
+    "Siapa yang paling cuek?",
+    "Siapa yang paling overthinking?",
+    "Siapa yang paling gampang nangis?",
+    "Siapa yang paling drama?",
+    "Siapa yang paling awkward?",
+    "Siapa yang paling sabar?",
+    "Siapa yang paling childish?",
+    "Siapa yang paling toxic pas ngambek?",
+    "Siapa yang paling romantis?",
+    "Siapa yang paling gampang kangen?",
+    "Apa hal paling bikin kangen saat LDR?",
+    "Kalau VC-an biasanya ngapain?",
+    "Siapa yang paling sering ketiduran pas call?",
+    "Apa chat pasangan yang paling sering dibaca ulang?",
+    "Hal paling sedih waktu LDR?",
+    "Apa hal paling bikin tenang dari pasangan?",
+    "Kalau pasangan ilang 1 hari rasanya gimana?",
+    "Momen VC paling memorable?",
+    "Kalau lagi kangen berat biasanya ngapain?",
+    "Hal kecil yang paling bikin bahagia waktu LDR?",
+    "Apa hal yang paling ditunggu saat ketemu nanti?",
+    "Apa yang paling ditakutin dalam hubungan LDR?",
+    "Kalau pasangan slow response biasanya mikir apa?",
+    "Apa hal paling bikin senyum waktu notif pasangan muncul?",
+    "Apa kebiasaan pasangan saat VC?",
+    "Siapa yang duluan jatuh cinta?",
+    "Apa hal pertama yang bikin tertarik?",
+    "Tanggal penting dalam hubungan kita?",
+    "Momen paling romantis bareng pasangan?",
+    "Apa alasan kamu sayang sama pasangan?",
+    "Kalau nikah muda mau gak?",
+    "Kalau punya rumah impian pengen kayak gimana?",
+    "Mau honeymoon ke mana?",
+    "Kalau punya anak pengen berapa?",
+    "Nama anak yang lucu menurutmu?",
+    "Apa mimpi terbesar pasangan?",
+    "Kalau bisa peluk sekarang mau bilang apa?",
+    "Apa hal paling bikin nyaman dari pasangan?",
+    "Apa love language pasangan?",
+    "Apa kata paling manis dari pasangan?",
+    "Apa hal yang bikin hubungan ini bertahan?",
+    "Kalau bisa muter waktu pengen balik ke momen apa?",
+    "Apa momen paling bikin deg-degan?",
+    "Apa hal paling sweet yang pernah pasangan lakuin?",
+    "Kalau pasangan sedih biasanya kamu ngapain?",
+    "Kalau pasangan jadi hewan cocok jadi apa?",
+    "Kalau pasangan jadi makanan cocok jadi apa?",
+    "Kalau pasangan jadi hantu jadi hantu apa?",
+    "Kalau pasangan zombie pertama kali yang dilakukan apa?",
+    "Kalau pasangan jadi karakter anime siapa?",
+    "Kalau pasangan jadi villain cocoknya jadi apa?",
+    "Kalau pasangan jadi superhero kekuatannya apa?",
+    "Kalau pasangan jadi kucing kelakuannya gimana?",
+    "Kalau tiba-tiba miskin bareng hal pertama yang dilakukan?",
+    "Kalau nyasar di hutan siapa yang mati duluan?",
+    "Kalau jadi idol duo nama grup kalian apa?",
+    "Kalau jadi streamer kontennya apa?",
+    "Kalau pasangan jadi NPC dialognya apa?",
+    "Kalau pasangan jadi meme cocok meme apa?",
+    "Kalau pasangan jadi suara notifikasi bunyinya gimana?",
+    "Apa kebiasaan pasangan yang paling ngeselin?",
+    "Apa kebiasaan paling lucu pasangan?",
+    "Apa kata yang paling sering diucapin pasangan?",
+    "Siapa yang paling sering spam chat?",
+    "Siapa yang paling lama bales chat?",
+    "Siapa yang paling sering typo?",
+    "Siapa yang paling susah dibangunin?",
+    "Siapa yang paling berantakan?",
+    "Siapa yang paling rajin?",
+    "Siapa yang paling sering lupa?",
+    "Siapa yang paling suka stalking?",
+    "Siapa yang paling boros?",
+    "Siapa yang paling rakus?",
+    "Siapa yang paling gampang lapar?",
+    "Siapa yang paling sering ngelamun?",
+    "Siapa yang paling sering kirim meme?",
+    "Siapa yang paling sering ngomong 'terserah'?",
+    "Siapa yang paling sering ngajak jalan?",
+    "Siapa yang paling sering ngambek tanpa alasan?",
+    "Siapa yang paling sering bilang 'gapapa' padahal kenapa-napa?",
+    "Apa ketakutan terbesar pasangan?",
+    "Apa trauma kecil pasangan?",
+    "Apa yang paling pasangan butuhin sekarang?",
+    "Apa insecurity pasangan?",
+    "Apa hal yang bikin pasangan capek akhir-akhir ini?",
+    "Apa impian masa kecil pasangan?",
+    "Apa hal yang paling pasangan takut kehilangan?",
+    "Apa arti hubungan ini buat kamu?",
+    "Apa yang bikin pasangan merasa dicintai?",
+    "Kalau hubungan ini jadi lagu, lagu apa?",
+    "Apa hal yang belum pernah kamu bilang ke pasangan?",
+    "Apa yang paling bikin hubungan ini spesial?",
+    "Kalau suatu hari jauh, apa yang paling dikangenin?",
+    "Apa yang bikin kamu bertahan sampai sekarang?",
+    "Apa hal yang paling pengen dilakukan bareng pasangan?",
+    "Kalau pasangan jadi tukang bakso jualannya laku gak?",
+    "Kalau pasangan jadi presiden kebijakan pertamanya apa?",
+    "Kalau pasangan masuk isekai jadi apa?",
+    "Kalau pasangan jadi vtuber namanya siapa?",
+    "Kalau pasangan jadi hacker pertama ngehack apa?",
+    "Kalau pasangan jadi guru mapelnya apa?",
+    "Kalau pasangan buka warung namanya apa?",
+    "Kalau pasangan jadi content creator kontennya apa?",
+    "Kalau pasangan jadi detektif bisa nyelesain kasus gak?",
+    "Kalau pasangan jadi alien bentuknya gimana?",
+    "Kalau pasangan bisa baca pikiran pertama kali mau baca pikiran siapa?",
+    "Kalau pasangan tiba-tiba terkenal hal memalukan apa yang bakal viral?",
+    "Kalau pasangan jadi karakter game ranknya apa?",
+    "Kalau pasangan jadi AI pertama kali ngomong apa?",
+    "Kalau pasangan bisa teleport pengen ke mana dulu?",
+    "Apa hal kecil dari pasangan yang paling bikin bahagia?",
+    "Apa hal yang paling kamu syukuri dari hubungan ini?",
+    "Apa momen paling bikin nangis?",
+    "Apa hal paling bikin takut kehilangan pasangan?",
+    "Kalau pasangan lagi capek pengen kamu lakuin apa?",
+    "Apa hal yang paling pengen kamu denger dari pasangan?",
+    "Apa arti rumah menurutmu bersama pasangan?",
+    "Apa yang bikin pasangan beda dari orang lain?",
+    "Kalau hubungan ini jadi warna, warnanya apa?",
+    "Apa versi terbaik pasangan di matamu?",
+    "Apa yang paling bikin kamu jatuh cinta terus?",
+    "Kalau suatu hari pasangan jauh, pesan terakhir yang mau disampaikan apa?",
+    "Apa pelukan pasangan terasa seperti apa?",
+    "Apa hal paling sederhana tapi paling bermakna dari pasangan?",
+    "Apa hal paling indah dari hubungan kalian?"
+];
+
+        // ==========================================
+        // STATE MANAGEMENT
+        // ==========================================
+        let currentUser = null;
+        let currentRoom = null;
+        let playerRole = null; // 'p1' atau 'p2'
+        let unsubscribeRoom = null;
+        let matchScore = 0;
+        let localQuestionIndex = 0;
+
+        // DOM Elements
+        const screens = {
+            login: document.getElementById('screen-login'),
+            lobby: document.getElementById('screen-lobby'),
+            game: document.getElementById('screen-game')
+        };
+
+        // Utility: Generate Particles
+        function initParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 15; i++) {
+                const div = document.createElement('div');
+                div.className = 'particle';
+                div.style.left = `${Math.random() * 100}vw`;
+                div.style.width = div.style.height = `${Math.random() * 20 + 10}px`;
+                div.style.animationDelay = `${Math.random() * 5}s`;
+                div.style.animationDuration = `${Math.random() * 5 + 5}s`;
+                container.appendChild(div);
+            }
+        }
+        initParticles();
+
+        // Utility: Show Screen
+        function showScreen(screenName) {
+            Object.values(screens).forEach(s => {
+                s.classList.add('hidden');
+                s.classList.remove('flex');
+            });
+            screens[screenName].classList.remove('hidden');
+            screens[screenName].classList.add('flex');
+        }
+
+        // ==========================================
+        // AUTHENTICATION LOGIC
+        // ==========================================
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            playSound('click');
+            try {
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                alert("Login gagal: " + error.message);
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => {
+            playSound('click');
+            signOut(auth);
+        });
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-name').innerText = user.displayName.split(' ')[0];
+                document.getElementById('user-avatar').src = user.photoURL;
+                
+                // Cek local storage untuk reconnect
+                const savedRoom = localStorage.getItem('futari_room');
+                const savedRole = localStorage.getItem('futari_role');
+                if (savedRoom && savedRole) {
+                    reconnectRoom(savedRoom, savedRole);
+                } else {
+                    showScreen('lobby');
+                }
+            } else {
+                currentUser = null;
+                showScreen('login');
+                localStorage.removeItem('futari_room');
+                localStorage.removeItem('futari_role');
+            }
+        });
+
+        // ==========================================
+        // ROOM LOGIC
+        // ==========================================
+        function generateRoomCode() {
+            return Math.floor(1000 + Math.random() * 9000).toString();
+        }
+
+        document.getElementById('btn-create-room').addEventListener('click', async () => {
+            playSound('click');
+            const roomCode = generateRoomCode();
+            const roomRef = ref(db, `rooms/${roomCode}`);
+            
+            // Pilih 10 pertanyaan random untuk session ini
+            const shuffled = [...questionBank].sort(() => 0.5 - Math.random());
+            const selectedQuestions = shuffled.slice(0, 10);
+
+            await set(roomRef, {
+                createdAt: serverTimestamp(),
+                state: 'waiting',
+                questionIndex: 0,
+                questions: selectedQuestions,
+                score: 0,
+                players: {
+                    p1: {
+                        uid: currentUser.uid,
+                        name: currentUser.displayName.split(' ')[0],
+                        photo: currentUser.photoURL,
+                        online: true,
+                        typing: false,
+                        answer: ""
+                    }
+                }
+            });
+
+            joinGameEnv(roomCode, 'p1');
+        });
+
+        document.getElementById('btn-join-room').addEventListener('click', async () => {
+            playSound('click');
+            const code = document.getElementById('input-room-code').value.trim();
+            if (code.length !== 4) return alert("Kode room harus 4 digit!");
+
+            const roomRef = ref(db, `rooms/${code}`);
+            const snapshot = await get(roomRef);
+
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                if (!data.players.p2 || data.players.p2.uid === currentUser.uid) {
+                    await update(child(roomRef, 'players/p2'), {
+                        uid: currentUser.uid,
+                        name: currentUser.displayName.split(' ')[0],
+                        photo: currentUser.photoURL,
+                        online: true,
+                        typing: false,
+                        answer: ""
+                    });
+                    // Start Game
+                    if (data.state === 'waiting') {
+                        await update(roomRef, { state: 'playing' });
+                    }
+                    joinGameEnv(code, 'p2');
+                } else {
+                    alert("Room sudah penuh!");
+                }
+            } else {
+                alert("Room tidak ditemukan!");
+            }
+        });
+
+        async function reconnectRoom(code, role) {
+            const roomRef = ref(db, `rooms/${code}`);
+            const snapshot = await get(roomRef);
+            if (snapshot.exists()) {
+                await update(child(roomRef, `players/${role}`), { online: true });
+                joinGameEnv(code, role);
+            } else {
+                localStorage.removeItem('futari_room');
+                showScreen('lobby');
+            }
+        }
+
+        function joinGameEnv(code, role) {
+            currentRoom = code;
+            playerRole = role;
+            localStorage.setItem('futari_room', code);
+            localStorage.setItem('futari_role', role);
+            
+            document.getElementById('display-room-code').innerText = code;
+            showScreen('game');
+            playSound('join');
+
+            // Setup Disconnect handler
+            const playerOnlineRef = ref(db, `rooms/${code}/players/${role}/online`);
+            onDisconnect(playerOnlineRef).set(false);
+
+            listenToRoom(code);
+        }
+
+        // ==========================================
+        // GAMEPLAY SYNC LOGIC
+        // ==========================================
+        function listenToRoom(code) {
+            if (unsubscribeRoom) unsubscribeRoom();
+            
+            const roomRef = ref(db, `rooms/${code}`);
+            unsubscribeRoom = onValue(roomRef, (snapshot) => {
+                const data = snapshot.val();
+                if (!data) return; // Room deleted
+
+                updateUI(data);
+                checkGameLogic(data, roomRef);
+            });
+        }
+
+        function updateUI(data) {
+            // Update Player 1
+            if (data.players.p1) {
+                document.getElementById('p1-name').innerText = data.players.p1.name;
+                document.getElementById('p1-avatar').src = data.players.p1.photo;
+                document.getElementById('p1-status').className = `absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${data.players.p1.online ? 'bg-green-400' : 'bg-gray-400'}`;
+            }
+
+            // Update Player 2
+            if (data.players.p2) {
+                document.getElementById('p2-name').innerText = data.players.p2.name;
+                document.getElementById('p2-avatar').src = data.players.p2.photo;
+                document.getElementById('p2-status').className = `absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white ${data.players.p2.online ? 'bg-green-400' : 'bg-gray-400'}`;
+            }
+
+            // Typing Indicator
+            const otherRole = playerRole === 'p1' ? 'p2' : 'p1';
+            const typingEl = document.getElementById('typing-indicator');
+            if (data.players[otherRole] && data.players[otherRole].typing) {
+                typingEl.innerText = `${data.players[otherRole].name} sedang mengetik...`;
+            } else {
+                typingEl.innerText = "";
+            }
+
+            // Score & Progress Bar
+            const totalQuestions = data.questions ? data.questions.length : 10;
+            const progress = (data.score / totalQuestions) * 100;
+            document.getElementById('score-display').innerText = `${Math.round(progress)}%`;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+
+            // Game States
+            if (data.state === 'waiting') {
+                document.getElementById('game-state-waiting').classList.remove('hidden');
+                document.getElementById('game-state-playing').classList.add('hidden');
+                document.getElementById('action-bar').classList.add('hidden');
+            } 
+            else if (data.state === 'playing') {
+                document.getElementById('game-state-waiting').classList.add('hidden');
+                document.getElementById('game-state-playing').classList.remove('hidden');
+                document.getElementById('action-bar').classList.remove('hidden');
+                document.getElementById('reveal-area').classList.add('hidden');
+                
+                if (data.questions) {
+                    document.getElementById('question-text').innerText = data.questions[data.questionIndex];
+                }
+
+                // Check if I already answered
+                const myAnswer = data.players[playerRole].answer;
+                const inputEl = document.getElementById('input-answer');
+                const btnEl = document.getElementById('btn-submit');
+                
+                if (myAnswer !== "") {
+                    inputEl.value = "Menunggu doi menjawab...";
+                    inputEl.disabled = true;
+                    btnEl.disabled = true;
+                    btnEl.classList.replace('bg-pink-500', 'bg-gray-400');
+                } else {
+                    inputEl.disabled = false;
+                    btnEl.disabled = false;
+                    btnEl.classList.replace('bg-gray-400', 'bg-pink-500');
+                    if(inputEl.value === "Menunggu doi menjawab...") inputEl.value = "";
+                }
+            }
+            else if (data.state === 'revealing') {
+                document.getElementById('action-bar').classList.add('hidden');
+                document.getElementById('reveal-area').classList.remove('hidden');
+                document.getElementById('reveal-area').classList.add('flex');
+                
+                document.getElementById('reveal-p1-name').innerText = data.players.p1.name;
+                document.getElementById('reveal-p2-name').innerText = data.players.p2.name;
+                
+                const ans1 = document.getElementById('reveal-p1-answer');
+                const ans2 = document.getElementById('reveal-p2-answer');
+                
+                ans1.innerText = data.players.p1.answer;
+                ans2.innerText = data.players.p2.answer;
+                
+                // Remove blur effect
+                setTimeout(() => {
+                    ans1.classList.remove('blur-md');
+                    ans2.classList.remove('blur-md');
+                }, 500);
+            }
+        }
+
+        async function checkGameLogic(data, roomRef) {
+            // Logic dijalankan oleh P1 (sebagai 'Host' sederhana) untuk menghindari double trigger
+            if (playerRole !== 'p1') return;
+
+            if (data.state === 'playing') {
+                const ans1 = data.players.p1?.answer;
+                const ans2 = data.players.p2?.answer;
+
+                // Jika keduanya sudah jawab
+                if (ans1 && ans2 && ans1 !== "" && ans2 !== "") {
+                    await update(roomRef, { state: 'revealing' });
+                    
+                    // Simple Similarity Check
+                    const s1 = ans1.toLowerCase().trim();
+                    const s2 = ans2.toLowerCase().trim();
+                    let isMatch = false;
+                    
+                    if (s1 === s2 || s1.includes(s2) || s2.includes(s1)) {
+                        isMatch = true;
+                    }
+
+                    // Show Result Locally then sync
+                    setTimeout(async () => {
+                        const resultEl = document.getElementById('match-result');
+                        resultEl.classList.remove('hidden');
+                        if (isMatch) {
+                            resultEl.innerText = "✨ COCOK! ✨";
+                            resultEl.className = "hidden text-3xl font-cute font-bold text-center mt-4 text-pink-500 heartbeat";
+                            playSound('match');
+                            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#ff69b4', '#9370db', '#87cefa'] });
+                            await update(roomRef, { score: data.score + 1 });
+                        } else {
+                            resultEl.innerText = "😅 BEDA JAWABAN 😅";
+                            resultEl.className = "hidden text-2xl font-cute font-bold text-center mt-4 text-gray-500";
+                            playSound('click');
+                        }
+
+                        // Next Question
+                        setTimeout(async () => {
+                            resultEl.classList.add('hidden');
+                            document.getElementById('reveal-p1-answer').classList.add('blur-md');
+                            document.getElementById('reveal-p2-answer').classList.add('blur-md');
+                            
+                            const nextIndex = data.questionIndex + 1;
+                            if (nextIndex < data.questions.length) {
+                                await update(roomRef, {
+                                    state: 'playing',
+                                    questionIndex: nextIndex,
+                                    'players/p1/answer': "",
+                                    'players/p2/answer': ""
+                                });
+                            } else {
+                                // Game Over - Reset
+                                alert(`Game Selesai! Chemistry Kalian: ${Math.round((data.score / data.questions.length) * 100)}%`);
+                                localStorage.removeItem('futari_room');
+                                location.reload();
+                            }
+                        }, 4000);
+
+                    }, 1000);
+                }
+            }
+        }
+
+        // ==========================================
+        // INPUT HANDLING
+        // ==========================================
+        let typingTimer;
+        const inputAnswer = document.getElementById('input-answer');
+        
+        inputAnswer.addEventListener('input', () => {
+            if (!currentRoom || !playerRole) return;
+            update(ref(db, `rooms/${currentRoom}/players/${playerRole}`), { typing: true });
+            
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(() => {
+                update(ref(db, `rooms/${currentRoom}/players/${playerRole}`), { typing: false });
+            }, 1000);
+        });
+
+        document.getElementById('btn-submit').addEventListener('click', async () => {
+            playSound('click');
+            const val = inputAnswer.value.trim();
+            if (val === "") return;
+
+            if (currentRoom && playerRole) {
+                await update(ref(db, `rooms/${currentRoom}/players/${playerRole}`), { 
+                    answer: val,
+                    typing: false 
+                });
+                inputAnswer.value = "";
+            }
+        });
+
+        // Enter key to submit
+        inputAnswer.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') document.getElementById('btn-submit').click();
+        });
+
+    </script>
+</body>
+</html>
